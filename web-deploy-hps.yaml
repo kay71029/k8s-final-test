@@ -1,0 +1,55 @@
+
+ld k8s cluster: 
+# apiVersion: extensions/v1beta1
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deployment-web
+  namespace: k8s-user-2
+  labels:
+    app: Web
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: Web
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1         #滾動升級POD最高上限
+      maxUnavailable: 1
+  minReadySeconds: 5      #服務啟動等待的時間，確保服務一起來可以使用時功能齊全（秒）
+  template:
+    metadata:
+      name: web
+      namespace: k8s-user-2
+      labels:
+        app: Web
+    spec:
+      containers:
+      - image: nginx:latest
+        imagePullPolicy: Always
+        name: web
+        ports:
+          - containerPort: 12345
+            protocol: TCP
+        resources:
+          requests:
+            cpu: 200m
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hps-web
+  namespace: k8s-user-2
+spec:
+  maxReplicas: 10
+  minReplicas: 1
+  scaleTargetRef:
+    # for old k8s cluster: 
+    # apiVersion: extensions/v1beta1
+    apiVersion: apps/v1
+    kind: Deployment
+    name: deployment-web
+  targetCPUUtilizationPercentage: 50
+
